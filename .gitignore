@@ -14,3 +14,5 @@ web/node_modules/
 web/dist/
 *.log
 .DS_Store
+# Personal interview prep (not part of the project)
+docs/interview/
