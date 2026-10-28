@@ -56,3 +56,39 @@ tradeoffs, and what would make us change it.
   against the documented transformers.js API but was not executed in the build sandbox.
 - **Would change if:** you run with network access: `EMBEDDER=transformers npm run ingest -- --force`
   then `npm run eval:retrieval`, and record the new numbers next to the hash ones.
+
+## D-005: Hybrid retrieval with Reciprocal Rank Fusion
+- **Date:** 2026-10-28 · **Stage:** 2
+- **Decision:** Run vector search and Postgres full-text search (OR query, `ts_rank_cd`), 30
+  candidates each, and fuse with RRF (k = 60).
+- **Options:** vector only; keyword only; weighted sum of normalised scores; RRF.
+- **Why:** Measured: hybrid R@1 79.3% vs 68.5% (vector) and 75.0% (FTS); MRR 0.877 vs 0.794 / 0.851.
+  RRF needs no score normalisation or weight tuning.
+- **Tradeoffs:** Two queries per search (both ~1-3 ms here). RRF ignores score margins.
+- **Would change if:** a learned fusion or a strong cross-encoder makes the fusion method irrelevant.
+
+## D-006: Re-ranker is pluggable and off unless it wins
+- **Date:** 2026-10-28 · **Stage:** 2
+- **Decision:** `RERANKER=cross-encoder` (local ms-marco-MiniLM-L-6-v2) is the default in
+  `.env.example`; `heuristic` and `none` are alternatives. The build sandbox runs `none`.
+- **Options:** cross-encoder; LLM re-ranking with Haiku; feature-based heuristic; none.
+- **Why:** The cross-encoder is the standard choice and free to run locally, but it could not be
+  downloaded in the sandbox. The heuristic re-ranker measured **worse** than plain hybrid on R@1
+  (72.8% vs 79.3%) and MRR (0.855 vs 0.877), with equal R@5, so it is not used by default.
+- **Tradeoffs:** Cross-encoder adds ~50-200 ms on CPU for 30 candidates (an estimate, not
+  measured here). LLM re-ranking adds an API call and cost to every question.
+- **Would change if:** `EMBEDDER=transformers RERANKER=cross-encoder npm run eval:retrieval` shows a
+  win on your machine; then make it the default and write a new baseline.
+
+## D-007: Golden set built in stage 2; recall measured per document
+- **Date:** 2026-10-28 · **Stage:** 2
+- **Decision:** Write the 50-question golden set (`evals/golden.jsonl`) now, not in stage 5, and
+  measure recall at the document level over the top-k chunks. 10 questions are deliberately
+  paraphrased; 4 are unanswerable; 3 target prompt-injection docs; 2 are drafting tasks.
+- **Options:** chunk-level relevance labels; LLM-generated questions; doc-level labels.
+- **Why:** Retrieval cannot be tuned blind. Chunk-level labels break every time chunk size
+  changes. Hand-written questions with known answers beat synthetic ones for a small corpus.
+- **Tradeoffs:** Doc-level recall can count a hit when the right doc's *wrong* chunk was retrieved.
+  The golden set was written by the same author as the corpus, which biases it toward the corpus's
+  phrasing (partly offset by the paraphrased subset).
+- **Would change if:** the corpus grows; then add chunk-level labels for a subset, and a dev/test split.

@@ -1,0 +1,11 @@
+{
+  "retrieval": {
+    "hash-v1+no-rerank": {
+      "mode": "hybrid",
+      "recall_at_1": 0.7934782608695652,
+      "recall_at_5": 0.9782608695652174,
+      "mrr": 0.8770186335403727,
+      "measured_at": "2026-10-28"
+    }
+  }
+}
