@@ -1,0 +1,10 @@
+node_modules
+web/node_modules
+web/dist
+data
+evals/runs
+.env
+.env.*
+notes
+private-notes
+.git

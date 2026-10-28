@@ -282,3 +282,30 @@ tradeoffs, and what would make us change it.
 - **Tradeoffs:** It ignores thinking tokens beyond the assumption, tool-definition tokens, and the
   router call, and it assumes Claude takes as many steps as the offline baseline.
 - **Would change if:** you run `npm run eval:full` with a key; then the measured numbers replace it.
+
+## D-025: Server-Sent Events for streaming
+- **Date:** 2026-10-28 · **Stage:** 8
+- **Decision:** `POST /api/ask` responds with `text/event-stream`; the UI parses it with `fetch`.
+- **Options:** WebSockets; polling; plain JSON after completion.
+- **Why:** Answers flow one way; SSE is plain HTTP (easy to proxy, test with curl, and deploy).
+- **Tradeoffs:** No client→server messages mid-stream (no "stop generating" over the same channel;
+  closing the request is the stop signal).
+
+## D-026: One process serves API + UI; optional basic auth
+- **Date:** 2026-10-28 · **Stage:** 8
+- **Decision:** Express serves `web/dist` and `/api` from one origin. `BASIC_AUTH=user:password`
+  protects everything with a constant-time credential check.
+- **Why:** One deployable unit, no CORS. Private notes must not be exposed by accident.
+- **Tradeoffs:** Basic auth is single-user and must run behind HTTPS. Not a substitute for real auth
+  in a multi-user product.
+
+## D-027: Deploy as one container + managed Postgres with pgvector
+- **Date:** 2026-10-28 · **Stage:** 8
+- **Decision:** A `Dockerfile` (API + built UI, ingests the mounted notes on start) and a
+  `docker-compose.yml` (pgvector/pgvector:pg16 + app). README lists exact steps for a single VM with
+  Docker Compose and for Fly.io + a managed Postgres (Neon or Supabase, both support pgvector).
+- **Why:** Simplest path that keeps notes private (they are mounted, not baked into the image).
+- **Tradeoffs:** **Neither file was built or run in the build sandbox** (no Docker daemon there). The
+  steps follow standard usage of each tool but were not executed end to end.
+- **Would change if:** you want zero servers: a static UI plus serverless functions works too, but SSE
+  and the first-request model load (transformers.js) fit a long-lived process better.

@@ -1,0 +1,32 @@
+# Local or single-server deployment:  docker compose up -d --build
+# Just the database for development:  docker compose up -d db
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: notes
+      POSTGRES_PASSWORD: notes
+      POSTGRES_DB: notes
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notes"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://notes:notes@db:5432/notes
+      NOTES_DIR: /notes
+    volumes:
+      # Swap ./corpus/sample for the folder with your own notes.
+      - ./corpus/sample:/notes:ro
+      - ./data:/app/data
+    ports: ["8787:8787"]
+
+volumes:
+  pgdata:

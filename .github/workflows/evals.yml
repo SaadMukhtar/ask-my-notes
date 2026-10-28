@@ -48,6 +48,8 @@ jobs:
         run: npm run eval:guardrails -- --gate
       - name: End-to-end eval, offline baseline (pass-rate gate)
         run: npm run eval:full -- --gate
+      - name: Build the web UI
+        run: npm --prefix web ci && npm --prefix web run build
       - uses: actions/upload-artifact@v4
         if: always()
         with:

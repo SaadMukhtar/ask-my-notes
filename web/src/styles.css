@@ -1,0 +1,72 @@
+:root {
+  --bg: #ffffff;
+  --panel: #f7f6f3;
+  --text: #37352f;
+  --muted: #787774;
+  --line: #e9e9e7;
+  --accent: #2383e2;
+  --accent-soft: #e7f1fb;
+  --warn: #9f6b00;
+  --warn-soft: #fbf3db;
+  --bad: #d44c47;
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191919;
+    --panel: #202020;
+    --text: #e6e6e4;
+    --muted: #9b9a97;
+    --line: #2f2f2f;
+    --accent: #529cca;
+    --accent-soft: #1f2d38;
+    --warn: #e2b54a;
+    --warn-soft: #3a3121;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+button { font: inherit; cursor: pointer; }
+.layout { display: flex; min-height: 100vh; }
+.chat { flex: 1; max-width: 760px; margin: 0 auto; padding: 24px 16px 0; display: flex; flex-direction: column; min-width: 0; }
+header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+h1 { font-size: 22px; margin: 0; }
+.meta { color: var(--muted); font-size: 13px; }
+.empty { padding: 32px 0; display: grid; gap: 8px; }
+.example { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; color: var(--text); }
+.example:hover { border-color: var(--accent); }
+.turn { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.question { font-weight: 600; font-size: 16px; }
+.steps { color: var(--muted); font-size: 13px; margin: 8px 0; padding-left: 18px; }
+.pulse { animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: 0.4; } }
+.answer { line-height: 1.6; }
+.answer.streaming { opacity: 0.7; }
+.answer.refused { background: var(--warn-soft); border-radius: 6px; padding: 8px 12px; }
+.md p { margin: 6px 0; }
+.md ul, .md ol { margin: 6px 0; padding-left: 22px; }
+.md code { background: var(--panel); padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
+.cite { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 4px; margin: 0 2px; border: none; border-radius: 9px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 600; vertical-align: 1px; }
+.cite-bad { background: #fbe4e4; color: var(--bad); }
+.sources { display: grid; gap: 4px; margin-top: 10px; }
+.source { display: flex; gap: 8px; align-items: center; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; color: var(--text); font-size: 13px; overflow: hidden; }
+.source:hover { border-color: var(--accent); }
+.footer { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.footer a { color: var(--muted); }
+.badge { background: var(--warn-soft); color: var(--warn); border-radius: 4px; padding: 0 6px; }
+.draft { margin-top: 10px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; }
+.error { color: var(--bad); }
+.composer { position: sticky; bottom: 0; margin-top: auto; display: flex; gap: 8px; padding: 12px 0 16px; background: var(--bg); border-top: 1px solid var(--line); }
+.composer input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); font: inherit; min-width: 0; }
+.composer button { padding: 0 16px; border: none; border-radius: 6px; background: var(--accent); color: white; }
+.composer button:disabled { opacity: 0.5; }
+.drawer { width: min(460px, 100vw); border-left: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; height: 100vh; overflow: auto; padding: 16px; }
+.drawer-head { display: flex; justify-content: space-between; gap: 8px; }
+.drawer-head button { background: none; border: none; font-size: 22px; color: var(--muted); }
+.note { white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; line-height: 1.5; }
+mark { background: var(--warn-soft); color: inherit; }
+@media (max-width: 900px) {
+  .drawer { position: fixed; right: 0; top: 0; z-index: 10; box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15); }
+}

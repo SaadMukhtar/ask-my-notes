@@ -20,7 +20,9 @@
     "eval:regrade": "tsx evals/regrade.ts",
     "eval:router": "tsx evals/run-router.ts",
     "report:latency": "tsx evals/report-latency.ts",
-    "estimate:cost": "tsx evals/estimate-cost.ts"
+    "estimate:cost": "tsx evals/estimate-cost.ts",
+    "build": "npm --prefix web ci && npm --prefix web run build",
+    "start": "tsx src/server/index.ts"
   },
   "repository": {
     "type": "git",
