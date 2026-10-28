@@ -262,3 +262,23 @@ tradeoffs, and what would make us change it.
 - **Why:** Honest reporting. A held-out set would need a second author or fresh examples.
 - **Would change if:** you add 20+ new labelled pairs and attack strings you write yourself. Use them
   as a test set and do not tune on them.
+
+## D-023: How latency is measured
+- **Date:** 2026-10-28 · **Stage:** 7
+- **Decision:** Evals run questions sequentially after a warm-up; percentiles use the nearest-rank
+  method; every trace stores total latency and time to first streamed token (`ttft_ms`).
+- **Why:** Parallel runs measure queueing, not the system; the first request pays one-off costs
+  (connection, model load). TTFT is what users feel with streaming.
+- **Tradeoffs:** Sequential evals are slower to run. Latency in the build sandbox reflects only the
+  offline pipeline, because no Claude calls were possible.
+
+## D-024: Cost estimate kept separate from measured cost
+- **Date:** 2026-10-28 · **Stage:** 7
+- **Decision:** `npm run estimate:cost` projects Claude's cost from offline traces (measured call
+  counts and prompt sizes, assumed 150/450 output tokens per tool/answer turn) and prints ESTIMATE.
+  The README lists it in a separate "estimates" row.
+- **Why:** You should know the order of magnitude (~$0.004/question routed and cached; ~$0.012 all
+  Sonnet) before spending money, but an estimate must never be mistaken for an eval number.
+- **Tradeoffs:** It ignores thinking tokens beyond the assumption, tool-definition tokens, and the
+  router call, and it assumes Claude takes as many steps as the offline baseline.
+- **Would change if:** you run `npm run eval:full` with a key; then the measured numbers replace it.

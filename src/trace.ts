@@ -37,6 +37,8 @@ export interface Trace {
   usage: TokenUsage;
   costUsd: number;
   latencyMs: number;
+  /** Time until the first answer token was streamed to the user (null if nothing streamed). */
+  ttftMs: number | null;
   createdAt: string;
 }
 
@@ -46,6 +48,7 @@ export class TraceRecorder {
   private readonly t0 = performance.now();
   usage: TokenUsage = { ...ZERO_USAGE };
   costUsd = 0;
+  private ttft: number | null = null;
 
   constructor(
     readonly kind: Trace["kind"],
@@ -73,6 +76,11 @@ export class TraceRecorder {
     if (step.costUsd) this.costUsd += step.costUsd;
   }
 
+  /** Call on every streamed text delta; only the first one counts. */
+  markFirstToken(): void {
+    this.ttft ??= Math.round(performance.now() - this.t0);
+  }
+
   elapsedMs(): number {
     return performance.now() - this.t0;
   }
@@ -86,6 +94,7 @@ export class TraceRecorder {
       usage: this.usage,
       costUsd: this.costUsd,
       latencyMs: Math.round(this.elapsedMs()),
+      ttftMs: this.ttft,
       createdAt: new Date().toISOString(),
       ...fields,
     };
@@ -103,10 +112,10 @@ export async function saveTrace(pool: pg.Pool | null, trace: Trace): Promise<voi
   if (!pool) return;
   try {
     await pool.query(
-      `INSERT INTO traces (id, kind, question, route, model, status, answer, citations, steps, usage, cost_usd, latency_ms)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      `INSERT INTO traces (id, kind, question, route, model, status, answer, citations, steps, usage, cost_usd, latency_ms, ttft_ms)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
       [trace.id, trace.kind, trace.question, trace.route ?? null, trace.model ?? null, trace.status, trace.answer,
-       JSON.stringify(trace.citations), JSON.stringify(trace.steps), JSON.stringify(trace.usage), trace.costUsd, trace.latencyMs],
+       JSON.stringify(trace.citations), JSON.stringify(trace.steps), JSON.stringify(trace.usage), trace.costUsd, trace.latencyMs, trace.ttftMs],
     );
   } catch (err) {
     console.warn("[trace] could not write to Postgres:", (err as Error).message);

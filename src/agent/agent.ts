@@ -129,7 +129,13 @@ export async function runAgent(pool: pg.Pool, question: string, opts: AgentOptio
       ...extra,
     };
     return rec.step("llm", name, { model, step: toolSteps }, () =>
-      llm.stream(params, { timeoutMs: llmTimeout, onText: (delta) => emit({ type: "text", delta }) }),
+      llm.stream(params, {
+        timeoutMs: llmTimeout,
+        onText: (delta) => {
+          rec.markFirstToken();
+          emit({ type: "text", delta });
+        },
+      }),
       (m) => {
         const usage = fromApiUsage(m.usage);
         return { model, usage, costUsd: costUsd(model, usage), output: { stop_reason: m.stop_reason, content: m.content } };

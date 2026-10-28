@@ -17,7 +17,10 @@
     "typecheck": "tsc --noEmit",
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
-    "eval:regrade": "tsx evals/regrade.ts"
+    "eval:regrade": "tsx evals/regrade.ts",
+    "eval:router": "tsx evals/run-router.ts",
+    "report:latency": "tsx evals/report-latency.ts",
+    "estimate:cost": "tsx evals/estimate-cost.ts"
   },
   "repository": {
     "type": "git",

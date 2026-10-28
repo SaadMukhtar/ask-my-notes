@@ -53,3 +53,6 @@ CREATE TABLE IF NOT EXISTS traces (
   cost_usd    NUMERIC(12, 6) NOT NULL DEFAULT 0,
   latency_ms  INT NOT NULL DEFAULT 0
 );
+
+-- Added in stage 7: time to first streamed token (what the user perceives as "it started answering").
+ALTER TABLE traces ADD COLUMN IF NOT EXISTS ttft_ms INT;

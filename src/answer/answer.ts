@@ -57,7 +57,7 @@ export async function answerQuestion(pool: pg.Pool, question: string, opts: Answ
     messages: [{ role: "user", content: buildUserMessage(question, hits) }],
   };
 
-  const msg = await rec.step("llm", "answer", { model, sources: hits.length }, () => llm.stream(params, { onText: opts.onText, timeoutMs: 60_000 }), (m) => {
+  const msg = await rec.step("llm", "answer", { model, sources: hits.length }, () => llm.stream(params, { onText: (d) => { rec.markFirstToken(); opts.onText?.(d); }, timeoutMs: 60_000 }), (m) => {
     const usage = fromApiUsage(m.usage);
     return { model, usage, costUsd: costUsd(model, usage), output: { stop_reason: m.stop_reason } };
   });

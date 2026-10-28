@@ -20,6 +20,7 @@ export interface EvalRow {
   citedPaths: string[];
   toolCalls: number;
   latencyMs: number;
+  ttftMs: number | null;
   costUsd: number;
   tokens: { input: number; output: number; cacheWrite: number; cacheRead: number };
   traceId: string;
@@ -37,7 +38,8 @@ export interface EvalSummary {
   byRoute: Record<string, { n: number; pass: number; p95Ms: number; avgCostUsd: number }>;
   refusal: { correctRefusals: number; unanswerable: number; falseRefusals: number; answerable: number };
   citedExpectedRate: number;
-  latency: { p50Ms: number; p95Ms: number };
+  latency: { p50Ms: number; p95Ms: number; ttftP50Ms: number | null; ttftP95Ms: number | null };
+  tokens: { avgInput: number; avgOutput: number; cacheReadShare: number };
   cost: { totalUsd: number; perQuestionUsd: number; judgeUsd: number };
 }
 
@@ -56,7 +58,7 @@ export async function runFullEval(
       route: res.route.route, model: res.trace.model ?? "", answer: res.answer, refused: res.refused,
       refusalReason: res.refusalReason, citedPaths,
       toolCalls: res.trace.steps.filter((s) => s.type === "tool").length,
-      latencyMs: res.trace.latencyMs, costUsd: res.trace.costUsd, tokens: res.trace.usage, traceId: res.trace.id,
+      latencyMs: res.trace.latencyMs, ttftMs: res.trace.ttftMs, costUsd: res.trace.costUsd, tokens: res.trace.usage, traceId: res.trace.id,
       det: gradeDeterministic(g, { answer: res.answer, refused: res.refused, citedPaths }),
     };
     if (opts.judgeLLM) row.judge = await judgeRow(opts.judgeLLM, opts.judgeModel ?? config.answerModel, g, row);
@@ -91,6 +93,7 @@ export function summarise(configKey: string, rows: EvalRow[], golden: GoldenItem
   const answerable = rows.filter((r) => !byId.get(r.id)!.should_refuse);
   const judged = rows.filter((r) => r.judge);
   const total = rows.reduce((s, r) => s + r.costUsd, 0);
+  const ttfts = rows.map((r) => r.ttftMs).filter((x): x is number => x !== null && x !== undefined);
   return {
     config: configKey,
     n: rows.length,
@@ -110,7 +113,17 @@ export function summarise(configKey: string, rows: EvalRow[], golden: GoldenItem
       answerable: answerable.length,
     },
     citedExpectedRate: mean(answerable.filter((r) => !r.refused).map((r) => (r.det.citedExpected ? 1 : 0))),
-    latency: { p50Ms: percentile(rows.map((r) => r.latencyMs), 50), p95Ms: percentile(rows.map((r) => r.latencyMs), 95) },
+    latency: {
+      p50Ms: percentile(rows.map((r) => r.latencyMs), 50),
+      p95Ms: percentile(rows.map((r) => r.latencyMs), 95),
+      ttftP50Ms: ttfts.length ? percentile(ttfts, 50) : null,
+      ttftP95Ms: ttfts.length ? percentile(ttfts, 95) : null,
+    },
+    tokens: {
+      avgInput: mean(rows.map((r) => r.tokens.input + r.tokens.cacheRead + r.tokens.cacheWrite)),
+      avgOutput: mean(rows.map((r) => r.tokens.output)),
+      cacheReadShare: rows.reduce((s, r) => s + r.tokens.cacheRead, 0) / (rows.reduce((s, r) => s + r.tokens.input + r.tokens.cacheRead + r.tokens.cacheWrite, 0) || 1),
+    },
     cost: { totalUsd: total, perQuestionUsd: total / rows.length, judgeUsd: judged.reduce((s, r) => s + r.judge!.costUsd, 0) },
   };
 }
@@ -121,6 +134,7 @@ export function printSummary(s: EvalSummary): void {
   console.log(`pass rate: ${pct(s.passRate)} (${Math.round(s.passRate * s.n)}/${s.n})   deterministic ${pct(s.passRateDeterministic)}   judge ${s.passRateJudge === null ? "not run" : pct(s.passRateJudge)}`);
   console.log(`refusals: ${s.refusal.correctRefusals}/${s.refusal.unanswerable} unanswerable correctly refused; ${s.refusal.falseRefusals}/${s.refusal.answerable} answerable wrongly refused`);
   console.log(`cited an expected doc: ${pct(s.citedExpectedRate)} of non-refused answerable questions`);
+  console.log(`time to first token p50 ${s.latency.ttftP50Ms ?? "-"} ms, p95 ${s.latency.ttftP95Ms ?? "-"} ms   tokens/question in ${Math.round(s.tokens.avgInput)} (cache-read share ${pct(s.tokens.cacheReadShare)}), out ${Math.round(s.tokens.avgOutput)}`);
   console.log(`latency p50 ${s.latency.p50Ms} ms, p95 ${s.latency.p95Ms} ms   cost $${s.cost.perQuestionUsd.toFixed(5)}/question (total $${s.cost.totalUsd.toFixed(4)}, judge $${s.cost.judgeUsd.toFixed(4)})`);
   console.log("by type:  " + Object.entries(s.byType).map(([k, v]) => `${k} ${v.pass}/${v.n}`).join(", "));
   console.log("by route: " + Object.entries(s.byRoute).map(([k, v]) => `${k} ${v.pass}/${v.n} (p95 ${v.p95Ms} ms, $${v.avgCostUsd.toFixed(5)}/q)`).join(", "));
