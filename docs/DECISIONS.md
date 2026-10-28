@@ -92,3 +92,43 @@ tradeoffs, and what would make us change it.
   The golden set was written by the same author as the corpus, which biases it toward the corpus's
   phrasing (partly offset by the paraphrased subset).
 - **Would change if:** the corpus grows; then add chunk-level labels for a subset, and a dev/test split.
+
+## D-008: One LLM interface; an offline extractive baseline for no-key runs
+- **Date:** 2026-10-28 · **Stage:** 3
+- **Decision:** All model calls go through `LLM.stream()`. `AnthropicLLM` uses the official SDK.
+  `OfflineLLM` (`LLM_PROVIDER=offline`) is a deterministic extractive stand-in that speaks the same
+  message shape (it even issues tool calls in stage 4).
+- **Options:** call the SDK directly everywhere; mock only in tests; a provider-neutral framework (LangChain).
+- **Why:** **No `ANTHROPIC_API_KEY` was available in the build environment.** The offline baseline
+  lets the whole pipeline (agent loop, guardrails, UI, CI) run and be tested end to end, and it gives
+  the evals a floor that Claude must beat. Tests use a scripted `FakeLLM` to pin exactly what we send.
+- **Tradeoffs:** Every number measured with the offline baseline describes the *baseline*, not Claude,
+  and is labelled that way. The real Claude path is written to the SDK docs but was not executed
+  against the live API in this environment.
+- **Would change if:** never remove the offline mode (it is what CI without secrets uses), but run
+  `npm run eval:full` with a key and record Claude's numbers next to the baseline's.
+
+## D-009: `[S#]` citation markers instead of the API's native citations
+- **Date:** 2026-10-28 · **Stage:** 3
+- **Decision:** Sources are rendered as `<source id="S1" ...>` blocks; the model cites `[S1]`.
+- **Options:** the Messages API citations feature (document blocks with `citations: {enabled: true}`,
+  or search-result blocks), which returns exact `cited_text` spans; JSON output with claim/source pairs.
+- **Why:** Works identically for one-shot answers, agent tool results, and the offline baseline;
+  keeps the streamed text plain; trivial to parse and to verify sentence by sentence in stage 6.
+- **Tradeoffs:** The model can cite an id that does not support the claim (or does not exist).
+  Native citations guarantee the quoted span exists. We compensate with stage 6 verification.
+- **Would change if:** verification shows many bad citations; native citations would give exact
+  spans to verify against.
+
+## D-010: Prompt caching layout
+- **Date:** 2026-10-28 · **Stage:** 3
+- **Decision:** Byte-stable system prompt with an explicit `cache_control` breakpoint in one-shot
+  answers; the agent loop (stage 4) additionally uses top-level automatic caching so each step
+  re-reads the previous steps' prefix from cache.
+- **Options:** no caching; caching the retrieved sources (they change every question, so no).
+- **Why:** The system prompt (~700 tokens) is identical on every call. In the agent, the conversation
+  prefix grows each step and is re-sent each step; caching makes step N pay ~10% for steps 1..N-1.
+- **Tradeoffs:** Cache writes cost 1.25x, so a one-off question with no follow-up within 5 minutes pays
+  a little more. Not verified against the live API here (no key); check `cache_read` in traces.
+- **Would change if:** traces show `cache_read_input_tokens` staying 0; then audit the prefix for
+  something that varies.
