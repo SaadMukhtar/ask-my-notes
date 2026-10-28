@@ -132,3 +132,40 @@ tradeoffs, and what would make us change it.
   a little more. Not verified against the live API here (no key); check `cache_read` in traces.
 - **Would change if:** traces show `cache_read_input_tokens` staying 0; then audit the prefix for
   something that varies.
+
+## D-011: Hand-written agent loop, not the SDK Tool Runner
+- **Date:** 2026-10-28 · **Stage:** 4
+- **Decision:** `runAgent()` is a manual `while` loop over `client.messages.stream()`.
+- **Options:** SDK beta Tool Runner (`client.beta.messages.toolRunner`); Claude Agent SDK; LangGraph.
+- **Why:** The required graph has custom branches (route before the loop, verify after it, retry once,
+  refuse on hard stops), and the point of the repo is to make each branch readable and testable.
+- **Tradeoffs:** We own `pause_turn`/edge-case handling the Tool Runner would do for us.
+- **Would change if:** the loop grows past what is readable; the Tool Runner's hooks can host the
+  verify/budget logic.
+
+## D-012: Hard stops: 6 tool steps, 60k-token budget, 5 s per tool, 60 s per model call
+- **Date:** 2026-10-28 · **Stage:** 4
+- **Decision:** As stated; configurable through `AgentOptions` and `TOKEN_BUDGET`.
+- **Why:** 6 steps covers search + re-search + 2 page reads + draft with room to spare on this corpus.
+  60k tokens bounds worst-case cost at about $0.12-0.60 per question on Sonnet 5.5 (cached input is
+  ~$0.20/M, fresh input $2/M; budget math counts cache reads as tokens). Tools are local Postgres
+  queries (ms), so 5 s only trips on a real problem.
+- **Tradeoffs:** A budget counted in tokens, not dollars, treats cheap cache reads like fresh input.
+- **Would change if:** traces show legitimate questions hitting a limit.
+
+## D-013: draft_page writes to data/drafts, never into NOTES_DIR
+- **Date:** 2026-10-28 · **Stage:** 4
+- **Decision:** Drafts go to a git-ignored `data/drafts/` folder for human review.
+- **Why:** An agent that writes into the corpus it searches can pollute later answers (including with
+  text that came from an injected document). Human review is the gate.
+- **Would change if:** an approval flow exists in the UI ("save to notes" button).
+
+## D-014: LLM router (Haiku) with a heuristic fallback
+- **Date:** 2026-10-28 · **Stage:** 4
+- **Decision:** With a key, Haiku classifies EASY/HARD (thinking off, 16 max tokens); on any failure
+  or unexpected reply, regex rules decide. Offline runs use the rules.
+- **Options:** rules only (free, instant); LLM only; embedding classifier trained on labelled questions.
+- **Why:** The brief asks for Haiku routing; the fallback keeps routing from ever blocking an answer.
+- **Tradeoffs:** The LLM router adds one small call (~$0.00002, a few hundred ms) per question.
+  Stage 7 measures the heuristic's accuracy against the golden set's difficulty labels.
+- **Would change if:** the heuristic matches the LLM router's accuracy; then drop the extra call.

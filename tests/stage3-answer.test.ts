@@ -83,3 +83,16 @@ describe("answerQuestion (Postgres + fake model)", async () => {
     expect(no.refused).toBe(true);
   });
 });
+
+describe("splitClaims edge cases", () => {
+  it("lets an uncited sentence inherit the next citation on the same line", () => {
+    const [a, b] = splitClaims("KR1: Complete Harbor cutover. (Done Oct 4.) [S5].");
+    expect(a.sourceIds).toEqual(["S5"]);
+    expect(a.inherited).toBe(true);
+    expect(b.inherited).toBeUndefined();
+  });
+  it("does not inherit across lines", () => {
+    const [a] = splitClaims("Uncited sentence about something long enough.\n- Cited one [S1].");
+    expect(a.sourceIds).toEqual([]);
+  });
+});
