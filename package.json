@@ -16,7 +16,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "web:dev": "npm --prefix web run dev",
-    "web:build": "npm --prefix web run build"
+    "web:build": "npm --prefix web run build",
+    "eval:regrade": "tsx evals/regrade.ts"
   },
   "repository": {
     "type": "git",

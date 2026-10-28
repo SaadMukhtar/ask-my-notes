@@ -7,5 +7,24 @@
       "mrr": 0.8770186335403727,
       "measured_at": "2026-10-28"
     }
+  },
+  "grader_agreement": {
+    "labels": 24,
+    "deterministic": {
+      "accuracy": 0.9166666666666666,
+      "kappa": 0.8333333333333333
+    },
+    "judge": null
+  },
+  "full": {
+    "offline-baseline|hash-v1|hybrid|verifier=default": {
+      "pass_rate": 0.34,
+      "pass_rate_deterministic": 0.34,
+      "pass_rate_judge": null,
+      "p95_ms": 7,
+      "cost_per_question_usd": 0,
+      "n": 50,
+      "measured_at": "2026-10-28"
+    }
   }
 }

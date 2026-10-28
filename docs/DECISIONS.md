@@ -169,3 +169,49 @@ tradeoffs, and what would make us change it.
 - **Tradeoffs:** The LLM router adds one small call (~$0.00002, a few hundred ms) per question.
   Stage 7 measures the heuristic's accuracy against the golden set's difficulty labels.
 - **Would change if:** the heuristic matches the LLM router's accuracy; then drop the extra call.
+
+## D-015: Two graders; the headline pass needs both
+- **Date:** 2026-10-28 · **Stage:** 5
+- **Decision:** Every answer gets a deterministic grade (key facts, forbidden strings, citations,
+  refusal) and, with a key, an LLM-judge grade. The headline "pass" requires both.
+- **Options:** judge only; deterministic only; judge with deterministic as a tie-breaker.
+- **Why:** On the labelled set the deterministic grader's only errors are false passes on answers
+  that contain the right strings but say something wrong; the judge targets exactly that. The
+  deterministic grader catches forbidden injected content and missing citations the judge ignores.
+- **Tradeoffs:** "Both" is stricter, so pass rates read lower than judge-only numbers you may see
+  elsewhere. The judge costs one extra Sonnet call per question.
+- **Would change if:** judge-vs-human agreement turns out low; then lean on deterministic checks and
+  tighten the rubric.
+
+## D-016: Sonnet 5.5 as the judge, rubric versioned
+- **Date:** 2026-10-28 · **Stage:** 5
+- **Decision:** The judge uses `ANSWER_MODEL` (Sonnet 5.5), low effort, JSON-schema output with the
+  reasoning before the verdict, and a cached rubric tagged `judge-v1`.
+- **Options:** Haiku (cheaper, weaker); Opus (stronger, ~2x price); a different vendor's model (less
+  self-preference bias).
+- **Why:** Strong enough for a fact-checking rubric at a reasonable price.
+- **Tradeoffs:** The same model family judging its own answers may be lenient (self-preference).
+  Not measured here: no key.
+- **Would change if:** judge-vs-human agreement is below ~85%; try Opus 5.5 as judge.
+
+## D-017: CI gates offline (always) and Claude (when a secret exists)
+- **Date:** 2026-10-28 · **Stage:** 5
+- **Decision:** The `offline` job runs tests, retrieval eval, guardrail eval, and the offline end-to-end
+  eval with zero tolerance. The `claude` job runs the real eval and judge only if the repo has an
+  `ANTHROPIC_API_KEY` secret, gating with a 3-question tolerance.
+- **Why:** Forks and keyless repos still get a meaningful, free, deterministic gate on everything
+  except model quality. Model quality is gated where it can be.
+- **Tradeoffs:** The Claude gate needs a baseline recorded once with a key
+  (`npm run eval:full -- --write-baseline`, then commit `evals/baseline.json`). Until then it reports
+  "no baseline; skipping". Each Claude CI run costs money.
+- **Would change if:** CI cost matters: run the Claude job nightly or on a label instead of every PR.
+
+## D-018: Grader v2 matches key facts at word starts
+- **Date:** 2026-10-28 · **Stage:** 5
+- **Decision:** `must_include` alternatives must start at a word boundary ("5 minutes" no longer
+  matches "15 minutes"). q21's key fact became "two|2 approval".
+- **Why:** The labelled set showed v1 passing a wrong answer (L04). Agreement went from 87.5% (kappa
+  0.75) to 91.7% (kappa 0.83).
+- **Tradeoffs:** The fix was found *using* the calibration set, so 91.7% is now an optimistic estimate.
+  Add fresh labels to get an unbiased one.
+- **Would change if:** new labels expose other systematic misses.

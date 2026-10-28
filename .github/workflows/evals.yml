@@ -1,0 +1,97 @@
+# Tests + evals on every pull request. The PR fails if any test fails or if a quality metric drops
+# below the baseline recorded in evals/baseline.json.
+name: tests-and-evals
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  offline:
+    # No secrets needed: hash embedder + offline extractive baseline are fully deterministic,
+    # so any drop in these numbers is a real regression in retrieval, the agent loop, or guardrails.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: notes
+          POSTGRES_PASSWORD: notes
+          POSTGRES_DB: notes
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U notes"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://notes:notes@localhost:5432/notes
+      TEST_DATABASE_URL: postgres://notes:notes@localhost:5432/notes_test
+      EMBEDDER: hash
+      RERANKER: none
+      LLM_PROVIDER: offline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Create test database
+        run: PGPASSWORD=notes psql -h localhost -U notes -d notes -c "CREATE DATABASE notes_test"
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run ingest
+      - name: Retrieval eval (recall@k gate)
+        run: npm run eval:retrieval -- --gate
+      - name: End-to-end eval, offline baseline (pass-rate gate)
+        run: npm run eval:full -- --gate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-runs-offline
+          path: evals/runs/
+
+  claude:
+    # Runs only when the repo has an ANTHROPIC_API_KEY secret (forks never do). Costs real money:
+    # roughly 50 agent runs + 50 judge calls per PR; see README "Numbers" for cost per question.
+    needs: offline
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      DATABASE_URL: postgres://notes:notes@localhost:5432/notes
+      EMBEDDER: hash
+      RERANKER: none
+      LLM_PROVIDER: anthropic
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: notes
+          POSTGRES_PASSWORD: notes
+          POSTGRES_DB: notes
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U notes"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - if: env.HAS_KEY != 'true'
+        run: echo "No ANTHROPIC_API_KEY secret; skipping the Claude eval."
+      - if: env.HAS_KEY == 'true'
+        uses: actions/checkout@v4
+      - if: env.HAS_KEY == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: env.HAS_KEY == 'true'
+        run: npm ci && npm run ingest
+      - name: End-to-end eval with Claude + LLM judge (pass-rate gate)
+        if: env.HAS_KEY == 'true'
+        run: npm run eval:full -- --gate
+      - if: env.HAS_KEY == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-runs-claude
+          path: evals/runs/
