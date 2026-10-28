@@ -99,7 +99,7 @@ Measured in the build sandbox (2026-10-28; no API key was available, so nothing 
 | Deterministic grader vs human labels (v2) | 91.7% agreement, kappa 0.83 (24 labels) |
 | Deterministic grader vs human labels (v1, plain substrings) | 87.5% agreement, kappa 0.75 |
 | LLM judge vs human labels | **not measured** (needs a key) |
-| End-to-end pass rate, offline extractive baseline | **34.0% (17/50)**, 2/4 unanswerable refused, 15/46 answerable wrongly refused |
+| End-to-end pass rate, offline extractive baseline | **34.0% (17/50)** at this stage (36.0% after stage 6), 2/4 unanswerable refused, 15/46 answerable wrongly refused |
 | End-to-end pass rate, Claude | **not measured** (needs a key) |
 
 The baseline's 34% is the floor: it is what "copy the best-matching sentences" achieves. It fails every

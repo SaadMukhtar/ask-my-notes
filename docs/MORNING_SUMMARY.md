@@ -12,9 +12,9 @@ I could *measure* (not what I could build), so read section 2 before you quote a
 | 1 Ingest | heading-aware chunking (220/60/30 tokens), contextual headers, incremental ingest by content hash, Postgres + pgvector HNSW + generated tsvector | 14 |
 | 2 Retrieve | vector + Postgres FTS, RRF fusion, pluggable re-ranker (cross-encoder / heuristic / none), per-signal explanations in `npm run search` | 13 |
 | 3 Answer | streaming answers with `[S#]` citations, cached byte-stable system prompt, refusal sentence, traces in Postgres + JSONL, offline extractive baseline | 10 |
-| 4 Agent | the exact graph from your brief: router (Haiku, heuristic fallback) → plan/act/observe with `search`, `read_page`, `draft_page` → verify → retry once → refuse; max 6 tool steps, token budget, per-tool and per-call timeouts | 15 |
+| 4 Agent | the exact graph from your brief: router (Haiku, heuristic fallback) → plan/act/observe with `search`, `read_page`, `draft_page` → verify → retry once → refuse; max 6 tool steps, token budget, per-tool and per-call timeouts | 18 |
 | 5 Evals | 50-question golden set (lookup, multi-hop, reasoning, summary, draft, injection, unanswerable; 10 paraphrased), recall@k, deterministic grader + LLM judge (Sonnet, JSON schema), 24 hand-labelled answers for judge calibration, replay/regrade, GitHub Actions gate | 7 |
-| 6 Guardrails | claim-level citation verifier (numbers, number+unit, word coverage, then Haiku), link allow-list, injection sanitiser that removes instruction-like sentences before the model reads them | 15 |
+| 6 Guardrails | claim-level citation verifier (numbers, number+unit, word coverage, then Haiku), link allow-list, injection sanitiser that removes instruction-like sentences before the model reads them | 17 |
 | 7 Latency/cost | TTFT + p50/p95 + tokens + cost in every trace, `report:latency`, router accuracy eval, cost estimate | 5 |
 | 8 UI | React + Vite chat UI over SSE: live agent steps, citation chips, note drawer with highlight, cost/latency footer, drafts; optional basic auth; Dockerfile + compose; exact deploy steps in the README | 5 |
 
