@@ -1,0 +1,52 @@
+{
+  "name": "ask-my-notes",
+  "version": "0.1.0",
+  "description": "A Notion-style AI assistant over markdown notes: ingest, hybrid retrieval, cited answers, an agent loop, evals, guardrails.",
+  "scripts": {
+    "db:migrate": "tsx src/db/migrate.ts",
+    "ingest": "tsx src/ingest/cli.ts",
+    "search": "tsx src/retrieve/cli.ts",
+    "ask": "tsx src/answer/cli.ts",
+    "agent": "tsx src/agent/cli.ts",
+    "server": "tsx src/server/index.ts",
+    "eval:retrieval": "tsx evals/run-retrieval.ts",
+    "eval:guardrails": "tsx evals/run-guardrails.ts",
+    "eval:full": "tsx evals/run-full.ts",
+    "eval:judge-agreement": "tsx evals/run-judge-agreement.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SaadMukhtar/ask-my-notes.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SaadMukhtar/ask-my-notes/issues"
+  },
+  "homepage": "https://github.com/SaadMukhtar/ask-my-notes#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
+    "@huggingface/transformers": "^4.3.2",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "gray-matter": "^4.0.3",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

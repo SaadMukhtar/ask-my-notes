@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+# Your private notes live here. Never commit them.
+notes/
+private-notes/
+# Generated data: traces, eval run outputs, model caches
+data/
+.cache/
+evals/runs/
+web/node_modules/
+web/dist/
+*.log
+.DS_Store
