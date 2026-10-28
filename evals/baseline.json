@@ -17,15 +17,6 @@
     "judge": null
   },
   "full": {
-    "offline-baseline|hash-v1|hybrid|verifier=default": {
-      "pass_rate": 0.34,
-      "pass_rate_deterministic": 0.34,
-      "pass_rate_judge": null,
-      "p95_ms": 7,
-      "cost_per_question_usd": 0,
-      "n": 50,
-      "measured_at": "2026-10-28"
-    },
     "offline-baseline|hash-v1|hybrid|verifier=lexical": {
       "pass_rate": 0.36,
       "pass_rate_deterministic": 0.36,

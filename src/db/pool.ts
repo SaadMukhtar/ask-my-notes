@@ -11,6 +11,12 @@ export function getPool(url: string = config.databaseUrl): pg.Pool {
   let pool = pools.get(url);
   if (!pool) {
     pool = new pg.Pool({ connectionString: url, max: 5 });
+    // HNSW is approximate and its graph is built with randomness, so two builds of the same data can
+    // return slightly different neighbours. ef_search (default 40) is how many candidates it explores;
+    // 100 makes small indexes effectively exact, which keeps evals reproducible (CI gates on them).
+    pool.on("connect", (client) => {
+      client.query("SET hnsw.ef_search = 100").catch(() => {});
+    });
     pools.set(url, pool);
   }
   return pool;
