@@ -5,6 +5,7 @@ import { getEmbedder } from "../src/embed";
 import { runFullEval, printSummary, summarise, pass } from "../src/eval/full";
 import { loadGolden } from "../src/eval/golden";
 import { getLLM } from "../src/llm/client";
+import { verifierName } from "../src/agent/agent";
 import { pipelineMode } from "../src/retrieve/search";
 
 /**
@@ -23,8 +24,7 @@ const only = args.includes("--only") ? new Set(args[args.indexOf("--only") + 1].
 const golden = loadGolden().filter((g) => !only || only.has(g.id));
 const llm = getLLM();
 const useJudge = llm.provider === "anthropic" && !args.includes("--no-judge");
-const verifierName = process.env.VERIFIER ?? "default";
-const configKey = `${llm.provider === "offline" ? "offline-baseline" : `claude:${config.answerModel}+${config.routerModel}`}|${getEmbedder().name}|${pipelineMode()}|verifier=${verifierName}`;
+const configKey = `${llm.provider === "offline" ? "offline-baseline" : `claude:${config.answerModel}+${config.routerModel}`}|${getEmbedder().name}|${pipelineMode()}|verifier=${verifierName(llm)}`;
 
 console.log(`Full eval: ${golden.length} questions, config ${configKey}, judge ${useJudge ? config.answerModel : "off"}`);
 const pool = getPool();

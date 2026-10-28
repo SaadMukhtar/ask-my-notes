@@ -215,3 +215,50 @@ tradeoffs, and what would make us change it.
 - **Tradeoffs:** The fix was found *using* the calibration set, so 91.7% is now an optimistic estimate.
   Add fresh labels to get an unbiased one.
 - **Would change if:** new labels expose other systematic misses.
+
+## D-019: Remove injected sentences before the model sees them
+- **Date:** 2026-10-28 · **Stage:** 6
+- **Decision:** `sanitizeSource()` removes instruction-like sentences (and hidden HTML comments that
+  contain them) from every source, replacing them with a visible placeholder, and marks the source
+  `flagged="prompt-injection"`.
+- **Options:** warn only (keep text, add a flag); drop the whole document; a classifier model (e.g. a
+  prompt-injection detector) instead of regexes; isolate untrusted docs in a separate, tool-less call.
+- **Why:** The model cannot follow what it never reads, and the legitimate rest of the note still
+  helps answer questions. Regexes are free, fast, explainable, and easy to test.
+- **Tradeoffs:** Regexes miss novel phrasings (other languages, polite requests with no trigger
+  words) and can remove a legitimate sentence that happens to match. The detector was evaluated on
+  strings written by the same author, so its 100% recall is optimistic.
+- **Would change if:** real notes produce false positives, or a held-out attack set shows low recall;
+  then add a small classifier model as a second opinion.
+
+## D-020: Two-tier citation verifier (lexical, then Haiku)
+- **Date:** 2026-10-28 · **Stage:** 6
+- **Decision:** Every cited claim gets a lexical check (numbers present, numbers paired with the same
+  unit, ≥60% content-word coverage). Claims that fail it go to Haiku 5.5 in one batched,
+  JSON-schema call. Offline runs use the lexical tier only.
+- **Options:** LLM for every claim; lexical only; a local NLI model (e.g. a DeBERTa MNLI cross-encoder).
+- **Why:** Most faithful claims reuse the source's words and numbers, so the free tier confirms them;
+  the LLM pays only for paraphrases and suspicious claims. Measured lexical accuracy: 82.1%.
+- **Tradeoffs:** The lexical tier passes claims that reuse the source's words but change their
+  meaning (swapped names or attributes), and the LLM tier only sees claims the lexical tier *rejected*,
+  so those false passes are never re-checked. A stricter design sends every claim to the LLM (about
+  5x the verification calls, still cheap on Haiku).
+- **Would change if:** with a key, `npm run eval:guardrails` shows the LLM tier is accurate; then
+  consider sending all claims to it, and measure the latency cost in stage 7.
+
+## D-021: Guardrails fail closed
+- **Date:** 2026-10-28 · **Stage:** 6
+- **Decision:** A claim the LLM verifier returns no verdict for counts as unsupported; an answer with
+  no supported citation fails; a second verification failure becomes a refusal; links in answers must
+  appear in a sanitised source.
+- **Why:** A wrong answer with confident citations is worse than "I couldn't find it".
+- **Tradeoffs:** More false refusals. The eval tracks them ("answerable wrongly refused").
+
+## D-022: The guardrail labels are optimistic, and both checks were improved after seeing them
+- **Date:** 2026-10-28 · **Stage:** 6
+- **Decision:** Keep `evals/verifier-labels.jsonl` and `evals/injection-cases.jsonl` as the guardrail
+  dev set and report the numbers with this caveat. The lexical verifier's unit check and number fix
+  (71.8% → 82.1%) and the injection payload rule were made after looking at failures on this data.
+- **Why:** Honest reporting. A held-out set would need a second author or fresh examples.
+- **Would change if:** you add 20+ new labelled pairs and attack strings you write yourself. Use them
+  as a test set and do not tune on them.

@@ -1,3 +1,4 @@
+import { sanitizeSource } from "../guardrails/injection";
 import type { Hit } from "../retrieve/types";
 
 /** The exact sentence the model must use when the notes do not contain the answer. */
@@ -37,11 +38,20 @@ export const SYSTEM_PROMPT = `You are Ask My Notes, an assistant that answers qu
 Question: How fast do I need to acknowledge a page?
 Answer: You have 5 minutes to acknowledge a page as primary [S1]. If you don't, PagerDuty pages the secondary [S1].`;
 
+/**
+ * One <source> block. Content passes through the injection sanitiser first (stage 6), so
+ * instruction-like text is removed before the model ever reads it; such sources carry
+ * flagged="prompt-injection" so the model can warn the user.
+ */
+export function sourceBlock(id: string, h: Hit): string {
+  const s = sanitizeSource(h.content);
+  const flag = s.flagged ? ' flagged="prompt-injection"' : "";
+  return `<source id="${id}" path="${h.path}" section="${escapeAttr(h.headingPath)}"${flag}>\n${s.text}\n</source>`;
+}
+
 /** Render retrieved chunks as numbered <source> blocks. The number is what the model cites. */
 export function renderSources(hits: Hit[], startAt = 1): string {
-  return hits
-    .map((h, i) => `<source id="S${i + startAt}" path="${h.path}" section="${escapeAttr(h.headingPath)}">\n${h.content}\n</source>`)
-    .join("\n\n");
+  return hits.map((h, i) => sourceBlock(`S${i + startAt}`, h)).join("\n\n");
 }
 
 export function buildUserMessage(question: string, hits: Hit[]): string {

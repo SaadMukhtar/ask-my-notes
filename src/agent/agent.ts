@@ -4,6 +4,7 @@ import { resolveCitations, type Citation } from "../answer/answer";
 import { REFUSAL } from "../answer/prompt";
 import { config } from "../config";
 import { structuralVerifier } from "../guardrails/structural";
+import { makeVerifier } from "../guardrails/verify";
 import type { Verifier, VerifyResult } from "../guardrails/types";
 import { getLLM, textOf, type LLM } from "../llm/client";
 import { costUsd, fromApiUsage, totalTokens } from "../llm/pricing";
@@ -48,6 +49,21 @@ export interface AgentResult {
   trace: Trace;
 }
 
+/**
+ * Which citation verifier runs: VERIFIER=structural|lexical|llm. Default: lexical + Haiku ("llm")
+ * with a real model, lexical only offline (there is no model to ask).
+ */
+export function verifierName(llm: LLM): "structural" | "lexical" | "llm" {
+  const v = process.env.VERIFIER;
+  if (v === "structural" || v === "lexical" || v === "llm") return v;
+  return llm.provider === "offline" ? "lexical" : "llm";
+}
+
+function defaultVerifier(llm: LLM): Verifier {
+  const name = verifierName(llm);
+  return name === "structural" ? structuralVerifier : makeVerifier(name, llm);
+}
+
 const MODEL_FOR = { easy: () => config.routerModel, hard: () => config.answerModel };
 
 /**
@@ -62,7 +78,7 @@ const MODEL_FOR = { easy: () => config.routerModel, hard: () => config.answerMod
  */
 export async function runAgent(pool: pg.Pool, question: string, opts: AgentOptions = {}): Promise<AgentResult> {
   const llm = opts.llm ?? getLLM();
-  const verifier = opts.verifier ?? structuralVerifier;
+  const verifier = opts.verifier ?? defaultVerifier(llm);
   const maxSteps = opts.maxToolSteps ?? MAX_TOOL_STEPS;
   const budget = opts.tokenBudget ?? Number(process.env.TOKEN_BUDGET ?? 60_000);
   const toolTimeout = opts.toolTimeoutMs ?? 5_000;

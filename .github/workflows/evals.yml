@@ -44,6 +44,8 @@ jobs:
       - run: npm run ingest
       - name: Retrieval eval (recall@k gate)
         run: npm run eval:retrieval -- --gate
+      - name: Guardrail eval (citation verifier + injection gate)
+        run: npm run eval:guardrails -- --gate
       - name: End-to-end eval, offline baseline (pass-rate gate)
         run: npm run eval:full -- --gate
       - uses: actions/upload-artifact@v4

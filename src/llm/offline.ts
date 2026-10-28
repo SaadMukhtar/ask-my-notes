@@ -75,7 +75,7 @@ export interface ParsedSource {
   content: string;
 }
 
-const SOURCE_RE = /<source id="(S\d+)" path="([^"]*)" section="([^"]*)">\n([\s\S]*?)\n<\/source>/g;
+const SOURCE_RE = /<source id="(S\d+)" path="([^"]*)" section="([^"]*)"(?: flagged="[^"]*")?>\n([\s\S]*?)\n<\/source>/g;
 
 export function parseSources(text: string): ParsedSource[] {
   return [...text.matchAll(SOURCE_RE)].map((m) => ({ id: m[1], path: m[2], section: m[3], content: m[4] }));
@@ -142,7 +142,7 @@ function sentencesOf(content: string): string[] {
     line = line.replace(/^(?:[-*+]|\d+\.)\s+/, "").replace(/\*\*/g, "").replace(/`/g, "");
     out.push(...line.split(/(?<=[.!?])\s+(?=[A-Z0-9])/));
   }
-  return out.map((s) => s.trim()).filter((s) => s.length > 15);
+  return out.map((s) => s.trim()).filter((s) => s.length > 15 && !s.includes("[removed by Ask My Notes"));
 }
 
 /**

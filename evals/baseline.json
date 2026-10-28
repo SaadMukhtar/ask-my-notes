@@ -25,6 +25,34 @@
       "cost_per_question_usd": 0,
       "n": 50,
       "measured_at": "2026-10-28"
+    },
+    "offline-baseline|hash-v1|hybrid|verifier=lexical": {
+      "pass_rate": 0.36,
+      "pass_rate_deterministic": 0.36,
+      "pass_rate_judge": null,
+      "p95_ms": 13,
+      "cost_per_question_usd": 0,
+      "n": 50,
+      "measured_at": "2026-10-28"
     }
+  },
+  "guardrails": {
+    "verifier_lexical": {
+      "accuracy": 0.8205128205128205,
+      "recall_unsupported": 0.75,
+      "precision_unsupported": 0.8
+    },
+    "verifier_llm": null,
+    "injection_cases": {
+      "recall": 1,
+      "false_positives": 0,
+      "n": 30
+    },
+    "injection_corpus": {
+      "planted_flagged": 3,
+      "planted": 3,
+      "clean_flagged": 0
+    },
+    "measured_at": "2026-10-28"
   }
 }

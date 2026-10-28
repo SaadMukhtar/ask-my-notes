@@ -1,3 +1,4 @@
+import { sourceBlock } from "../answer/prompt";
 import type { Hit } from "../retrieve/types";
 
 /**
@@ -23,8 +24,6 @@ export class SourceRegistry {
   }
 
   render(hit: Hit): string {
-    const id = this.register(hit);
-    const section = hit.headingPath.replace(/"/g, "'").replace(/[<>]/g, "");
-    return `<source id="${id}" path="${hit.path}" section="${section}">\n${hit.content}\n</source>`;
+    return sourceBlock(this.register(hit), hit);
   }
 }

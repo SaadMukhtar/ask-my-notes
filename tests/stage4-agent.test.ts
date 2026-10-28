@@ -8,6 +8,7 @@ import { AGENT_SYSTEM_PROMPT } from "../src/agent/prompt";
 import { heuristicRoute, llmRoute } from "../src/agent/router";
 import { withTimeout } from "../src/agent/tools";
 import { REFUSAL } from "../src/answer/prompt";
+import { structuralVerifier } from "../src/guardrails/structural";
 import { closePools } from "../src/db/pool";
 import { HashEmbedder } from "../src/embed/hash";
 import { ingestDirectory } from "../src/ingest/ingest";
@@ -54,7 +55,8 @@ describe("runAgent (Postgres + fake model)", async () => {
     if (pool) await ingestDirectory(pool, new HashEmbedder(), "./corpus/sample", { maxTokens: 220, minTokens: 60, overlapTokens: 30 });
   });
   afterAll(closePools);
-  const base = { router: "hard" as const, saveTrace: false };
+  // Pin the structural verifier: these tests are about the loop, stage 6 tests cover verification.
+  const base = { router: "hard" as const, saveTrace: false, verifier: structuralVerifier };
 
   it.skipIf(!pool)("search -> answer: routes, calls tools, caches, cites, and traces every step", async () => {
     const llm = new FakeLLM([[toolUse("t1", "search", { query: "on-call handoff" })], text("Handoff is Mondays at 10:00 Pacific [S1].")]);
