@@ -309,3 +309,23 @@ tradeoffs, and what would make us change it.
   steps follow standard usage of each tool but were not executed end to end.
 - **Would change if:** you want zero servers: a static UI plus serverless functions works too, but SSE
   and the first-request model load (transformers.js) fit a long-lived process better.
+
+## D-028: Model refusals become app refusals; server-side fallback not enabled yet
+- **Date:** 2026-10-28 · **Stage:** 3/4
+- **Decision:** If Claude stops with `stop_reason: "refusal"` (a safety classifier declined), the
+  agent returns its normal refusal with `refusalReason: "model_refusal"`. The API's server-side
+  fallback (`fallbacks: "default"` with the `server-side-fallback-2026-07-01` beta, which re-runs a
+  declined Sonnet 5.5 request on another model) is **not** enabled.
+- **Options:** enable the fallback on every Sonnet call; enable it behind a flag; leave it off.
+- **Why:** Questions about a team's work notes are very unlikely to trip safety classifiers, and the
+  fallback needs the beta messages endpoint, which could not be tested without a key. Adding untested
+  code to the main answer path was the bigger risk.
+- **Would change if:** traces show `model_refusal` on legitimate questions. Then switch
+  `AnthropicLLM.stream()` to `client.beta.messages.stream` with the fallback for Sonnet calls.
+
+## D-029: Prices and the Haiku cache-read rate
+- **Date:** 2026-10-28 · **Stage:** 3/7
+- **Decision:** `src/llm/pricing.ts` uses list prices: Sonnet 5.5 $2 / $10 (cache read $0.20), Haiku 5.5
+  $0.10 / $0.50, cache writes at 1.25x input. The Haiku cache-read price ($0.01/M) is **assumed** to follow
+  the usual 0.1x rule; it was not in the reference used.
+- **Would change if:** the pricing page says otherwise. Update the table; every cost number derives from it.
